@@ -36,41 +36,60 @@
 #############################################################################
 
 
-ALG_SRC_DIR=../../Source
-ALG_INC_DIR=../../Source/include
+FREERTOS_SRC_DIR=../../../../FreeRTOS/Source
+FREERTOS_INC_DIR=../../../../FreeRTOS/Source/include
+PORTABLE_SRC_DIR=../../portable/GCC/Linux
+PORTABLE_SRC_MEM_MANG_DIR=../../../../FreeRTOS/Source/portable/MemMang
 
 
 CC = gcc
 
-CFLAGS += -Wall -Werror -Wextra -Wpedantic -pthread -O0 -g
+CFLAGS += -Wall -Werror -Wextra -Wpedantic -pthread -O0 -g -DLINUX_PORT_DEBUG=1
 LDFLAGS += -Wall -Werror -Wextra -Wpedantic -pthread -O0 -g
 
 
+
 INCLUDE_DIRS +=	-I. \
-				-I${ALG_INC_DIR}
+				-I${FREERTOS_INC_DIR} \
+				-I${PORTABLE_SRC_DIR} \
 
 
-VPATH += ${ALG_SRC_DIR}
+VPATH += ${FREERTOS_SRC_DIR} \
+		 ${PORTABLE_SRC_DIR} \
+		 ${PORTABLE_SRC_MEM_MANG_DIR} \
 
-TARGET = queue-unit-test
+
+TARGET = Linux_gcc_exit_scheduler
 
 default: all
 
 all: ${TARGET}
 
 SRC = \
-	  dlist.c\
-	  queue_simple.c\
 	  main.c
 
+FREERTOS_SRC= \
+			  event_groups.c \
+			  list.c \
+			  queue.c \
+			  tasks.c \
+			  timers.c \
+			  port.c \
+			  heap_3.c \
+			  croutine.c \
 
 
 OBJ = ${SRC:.c=.o}
 ${OBJ}: %.o: %.c
 	${CC} ${INCLUDE_DIRS} ${CFLAGS} -c $< -o $@
 
-${TARGET}:	${OBJ}
-	${CC} ${LDFLAGS} ${LD_EXE_FLAGS} -o $@ ${OBJ} ${LIBS} 
+FREERTOS_OJB = ${FREERTOS_SRC:.c=.o} 
+${FREERTOS_OJB}: %.o: %.c
+	${CC} -I. -I${FREERTOS_INC_DIR} -I${PORTABLE_SRC_DIR} ${CFLAGS} -c $< -o $@
+
+
+$(TARGET):	${FREERTOS_OJB} ${OBJ}
+	${CC} ${LDFLAGS} ${LD_EXE_FLAGS} -o $@ ${FREERTOS_OJB} ${OBJ} ${LIBS} 
 
 
 .PHONY : clean
